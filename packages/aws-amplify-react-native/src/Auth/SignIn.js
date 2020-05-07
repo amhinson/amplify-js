@@ -24,6 +24,7 @@ import {
 	Wrapper,
 } from '../AmplifyUI';
 import TEST_ID from '../AmplifyTestIDs';
+import FederatedButtons from './common/FederatedButtons';
 
 const logger = new Logger('SignIn');
 
@@ -80,6 +81,10 @@ export default class SignIn extends AuthPiece {
 						{I18n.get('Sign in to your account')}
 					</Header>
 					<View style={theme.sectionBody}>
+						<FederatedButtons
+							changeState={this.changeState}
+							federated={this.props.federated}
+						/>
 						{this.renderUsernameField(theme)}
 						<FormField
 							theme={theme}

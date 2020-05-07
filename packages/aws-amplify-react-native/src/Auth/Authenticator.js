@@ -156,24 +156,18 @@ export default class Authenticator extends React.Component {
 		Auth.currentAuthenticatedUser()
 			.then(user => {
 				if (!this._isMounted) return;
-				if (user) {
-					this.checkContact(user);
-				} else {
-					if (statesJumpToSignIn.includes(authState)) {
-						this.handleStateChange(this._initialAuthState, null);
-					}
-				}
+				this.handleStateChange('signedIn', user);
 			})
 			.catch(err => {
-				if (!this._isMounted) return;
-				logger.debug(err);
-				if (statesJumpToSignIn.includes(authState)) {
-					Auth.signOut()
-						.then(() => {
-							this.handleStateChange(this._initialAuthState, null);
-						})
-						.catch(err => this.error(err));
+				if (!this._isMounted) {
+					return;
 				}
+				const promise = Promise.resolve();
+				promise
+					.then(() => this.handleStateChange(this._initialAuthState))
+					.catch(e => {
+						logger.debug('Failed to sign out', e);
+					});
 			});
 	}
 
@@ -193,7 +187,7 @@ export default class Authenticator extends React.Component {
 		const props_children = this.props.children || [];
 		const default_children = [
 			<Loading />,
-			<SignIn />,
+			<SignIn federated={this.props.federated} />,
 			<ConfirmSignIn />,
 			<VerifyContact />,
 			<SignUp signUpConfig={signUpConfig} />,

@@ -117,6 +117,7 @@ export function withAuthenticator(
 			return (
 				<Authenticator
 					{...this.props}
+					federated={this.authConfig.federated}
 					hideDefault={
 						this.authConfig.authenticatorComponents &&
 						this.authConfig.authenticatorComponents.length > 0
