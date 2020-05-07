@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { View } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import { Auth, I18n, Logger, JS } from 'aws-amplify';
 import AuthPiece from './AuthPiece';
 import {
@@ -24,8 +24,15 @@ import {
 	Wrapper,
 } from '../AmplifyUI';
 import TEST_ID from '../AmplifyTestIDs';
+import * as Keychain from 'react-native-keychain';
 
 const logger = new Logger('SignIn');
+
+const BiometryTypes = {
+	TouchID: 'TouchID',
+	FaceID: 'FaceID',
+	Fingerprint: 'Fingerprint',
+};
 
 export default class SignIn extends AuthPiece {
 	constructor(props) {
@@ -36,10 +43,93 @@ export default class SignIn extends AuthPiece {
 			username: null,
 			password: null,
 			error: null,
+			biometryType: null,
 		};
 
 		this.checkContact = this.checkContact.bind(this);
 		this.signIn = this.signIn.bind(this);
+
+		this.setBiometryType = this.setBiometryType.bind(this);
+		this.setPassword = this.setPassword.bind(this);
+		this.getPassword = this.getPassword.bind(this);
+		this.askBiometry = this.askBiometry.bind(this);
+	}
+
+	componentDidMount() {
+		this.setBiometryType();
+	}
+
+	setBiometryType() {
+		Keychain.getSupportedBiometryType().then(biometryType =>
+			this.setState({ biometryType })
+		);
+	}
+
+	setPassword() {
+		const { password } = this.state;
+		const username = this.getUsernameFromInput();
+		Keychain.setGenericPassword(username, password);
+		this.signIn();
+	}
+
+	getPassword() {
+		Keychain.getGenericPassword()
+			.then(result => {
+				if (!result) {
+					// Biometrics authentication failed
+				}
+
+				if (typeof result !== 'boolean') {
+					// Biometrics authentication passed
+					this.setState(
+						{
+							username: result.username,
+							password: result.password,
+						},
+						() => this.signIn()
+					);
+				}
+
+				console.log('Result: ', result);
+			})
+			.catch(async error => {
+				if ((await Keychain.getSupportedBiometryType()) === null) {
+					// After 5 failed attempts,
+					// biometrics authentication is disabled system-wide
+					// Keychain.getSupportedBiometryType() will return null
+					return;
+				}
+
+				console.error(error);
+
+				if (
+					error.message ===
+					'The user name or passphrase you entered is not correct.'
+				) {
+					// Invalid biometrics credentials after 3 attempts
+				}
+
+				if (error.message === 'User canceled the operation.') {
+					// Authentication was cancelled
+				}
+			});
+	}
+
+	askBiometry() {
+		const { biometryType } = this.state;
+		Alert.alert(
+			biometryType,
+			`Do you want to enable ${biometryType}?`,
+			[
+				{
+					text: 'No',
+					onPress: this.signIn,
+					style: 'cancel',
+				},
+				{ text: 'Yes', onPress: this.setPassword },
+			],
+			{ cancelable: false }
+		);
 	}
 
 	signIn() {
@@ -93,8 +183,8 @@ export default class SignIn extends AuthPiece {
 						<AmplifyButton
 							text={I18n.get('Sign In').toUpperCase()}
 							theme={theme}
-							onPress={this.signIn}
-							disabled={!this.getUsernameFromInput() && this.state.password}
+							onPress={this.askBiometry}
+							disabled={!this.getUsernameFromInput() || !this.state.password}
 							testID={TEST_ID.AUTH.SIGN_IN_BUTTON}
 						/>
 					</View>
@@ -115,6 +205,10 @@ export default class SignIn extends AuthPiece {
 						</LinkCell>
 					</View>
 					<ErrorRow theme={theme}>{this.state.error}</ErrorRow>
+					<AmplifyButton
+						text={this.state.biometryType}
+						onPress={this.getPassword}
+					/>
 				</View>
 			</Wrapper>
 		);
