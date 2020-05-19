@@ -26,6 +26,7 @@ import {
 } from '../AmplifyUI';
 import { AmplifyThemeType } from '../AmplifyTheme';
 import TEST_ID from '../AmplifyTestIDs';
+import * as WebBrowser from 'expo-web-browser';
 
 const logger = new Logger('SignIn');
 
@@ -50,31 +51,33 @@ export default class SignIn extends AuthPiece<ISignInProps, ISignInState> {
 		this.signIn = this.signIn.bind(this);
 	}
 
-	signIn() {
-		const username = this.getUsernameFromInput() || '';
-		const { password } = this.state;
-		logger.debug('Sign In for ' + username);
-		return Auth.signIn(username, password)
-			.then(user => {
-				logger.debug(user);
-				const requireMFA = user.Session !== null;
-				if (user.challengeName === 'SMS_MFA') {
-					this.changeState('confirmSignIn', user);
-				} else if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
-					logger.debug('require new password', user.challengeParam);
-					this.changeState('requireNewPassword', user);
-				} else {
-					this.checkContact(user);
-				}
-			})
-			.catch(err => {
-				if (err.code === 'PasswordResetRequiredException') {
-					logger.debug('the user requires a new password');
-					this.changeState('forgotPassword', username);
-				} else {
-					this.error(err);
-				}
-			});
+	async signIn() {
+		let result = await WebBrowser.openBrowserAsync('https://expo.io');
+		console.warn(result);
+		// const username = this.getUsernameFromInput() || '';
+		// const { password } = this.state;
+		// logger.debug('Sign In for ' + username);
+		// return Auth.signIn(username, password)
+		// 	.then(user => {
+		// 		logger.debug(user);
+		// 		const requireMFA = user.Session !== null;
+		// 		if (user.challengeName === 'SMS_MFA') {
+		// 			this.changeState('confirmSignIn', user);
+		// 		} else if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
+		// 			logger.debug('require new password', user.challengeParam);
+		// 			this.changeState('requireNewPassword', user);
+		// 		} else {
+		// 			this.checkContact(user);
+		// 		}
+		// 	})
+		// 	.catch(err => {
+		// 		if (err.code === 'PasswordResetRequiredException') {
+		// 			logger.debug('the user requires a new password');
+		// 			this.changeState('forgotPassword', username);
+		// 		} else {
+		// 			this.error(err);
+		// 		}
+		// 	});
 	}
 
 	showComponent(theme: AmplifyThemeType) {
