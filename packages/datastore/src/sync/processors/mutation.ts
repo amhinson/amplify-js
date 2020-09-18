@@ -113,7 +113,7 @@ class MutationProcessor {
 
 	public async resume(): Promise<void> {
 		if (this.processing || !this.isReady()) {
-			return;
+			throw new Error(this.processing ? 'Sync processing' : 'Sync not ready');
 		}
 
 		this.processing = true;
@@ -310,7 +310,7 @@ class MutationProcessor {
 											: null,
 									});
 								} catch (err) {
-									logger.warn("failed to execute errorHandler", err);
+									logger.warn('failed to execute errorHandler', err);
 								} finally {
 									// Return empty tuple, dequeues the mutation
 									return error.data

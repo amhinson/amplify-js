@@ -1,4 +1,8 @@
-import { browserOrNode, ConsoleLogger as Logger } from '@aws-amplify/core';
+import {
+	browserOrNode,
+	ConsoleLogger as Logger,
+	jitteredExponentialRetry,
+} from '@aws-amplify/core';
 import { CONTROL_MSG as PUBSUB_CONTROL_MSG } from '@aws-amplify/pubsub';
 import Observable, { ZenObservable } from 'zen-observable-ts';
 import { ModelInstanceCreator } from '../datastore/datastore';
@@ -367,7 +371,7 @@ export class SyncEngine {
 							await startPromise;
 
 							if (this.online) {
-								this.mutationsProcessor.resume();
+								jitteredExponentialRetry(this.mutationsProcessor.resume, []);
 							}
 						},
 					});
